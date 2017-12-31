@@ -2,7 +2,20 @@ version: '2.0'
 
 services:
   etherchain-light:
-    build: .
-    restart: always
+    build: ./explorer
+    #restart: always
     ports:
       - 3000:3000
+    links:
+      - provider
+    command: ["npm", "start"]
+  provider:
+    image: ethresearch/pyethapp
+    volumes:
+      - ./provider/default_data/config:/root/.config/pyethapp
+      - ./provider/default_data/log:/root/log
+    ports:
+      - 30303:30303
+      - 30303:30303/udp
+      - 8545:8545
+    command: ["pyethapp", "run"]
