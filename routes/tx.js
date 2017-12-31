@@ -6,56 +6,6 @@ var Web3 = require('web3');
 var abi = require('ethereumjs-abi');
 var abiDecoder = require('abi-decoder');
 
-router.get('/pending', function(req, res, next) {
-  
-  var config = req.app.get('config');  
-  var web3 = new Web3();
-  web3.setProvider(config.provider);
-  
-  async.waterfall([
-    function(callback) {
-      web3.parity.pendingTransactions(function(err, result) {
-        callback(err, result);
-      });
-    }
-  ], function(err, txs) {
-    if (err) {
-      return next(err);
-    }
-    
-    res.render('tx_pending', { txs: txs });
-  });
-});
-
-
-router.get('/submit', function(req, res, next) {  
-  res.render('tx_submit', { });
-});
-
-router.post('/submit', function(req, res, next) {
-  if (!req.body.txHex) {
-    return res.render('tx_submit', { message: "No transaction data specified"});
-  }
-  
-  var config = req.app.get('config');  
-  var web3 = new Web3();
-  web3.setProvider(config.provider);
-  
-  async.waterfall([
-    function(callback) {
-      web3.eth.sendRawTransaction(req.body.txHex, function(err, result) {
-        callback(err, result);
-      });
-    }
-  ], function(err, hash) {
-    if (err) {
-      res.render('tx_submit', { message: "Error submitting transaction: " + err });
-    } else {
-      res.render('tx_submit', { message: "Transaction submitted. Hash: " + hash });
-    }
-  });
-});
-
 router.get('/:tx', function(req, res, next) {
   
   var config = req.app.get('config');  
@@ -78,16 +28,12 @@ router.get('/:tx', function(req, res, next) {
       web3.eth.getTransactionReceipt(result.hash, function(err, receipt) {
         callback(err, result, receipt);
       });
-    }, function(tx, receipt, callback) {  
-      web3.trace.transaction(tx.hash, function(err, traces) {
-        callback(err, tx, receipt, traces);
-      });
-    }, function(tx, receipt, traces, callback) {
+    },function(tx, receipt, callback) {
       db.get(tx.to, function(err, value) {
-        callback(null, tx, receipt, traces, value);
+        callback(null, tx, receipt, value);
       });
     }
-  ], function(err, tx, receipt, traces, source) {
+  ], function(err, tx, receipt, source) {
     if (err) {
       return next(err);
     }
@@ -107,49 +53,10 @@ router.get('/:tx', function(req, res, next) {
     tx.traces = [];
     tx.failed = false;
     tx.gasUsed = 0;
-    if (traces != null) {
-    traces.forEach(function(trace) {
-        tx.traces.push(trace);
-        if (trace.error) {
-          tx.failed = true;
-          tx.error = trace.error;
-        }
-        if (trace.result && trace.result.gasUsed) {
-          tx.gasUsed += parseInt(trace.result.gasUsed, 16);
-        }
-      });
-    }
     // console.log(tx.traces);    
     res.render('tx', { tx: tx });
   });
   
-});
-
-router.get('/raw/:tx', function(req, res, next) {
-  
-  var config = req.app.get('config');  
-  var web3 = new Web3();
-  web3.setProvider(config.provider);
-  
-  async.waterfall([
-    function(callback) {
-      web3.eth.getTransaction(req.params.tx, function(err, result) {
-        callback(err, result);
-      });
-    }, function(result, callback) {
-      web3.trace.replayTransaction(result.hash, ["trace", "stateDiff", "vmTrace"], function(err, traces) {
-        callback(err, result, traces);
-      });
-    }
-  ], function(err, tx, traces) {
-    if (err) {
-      return next(err);
-    }
-    
-    tx.traces = traces;
-
-    res.render('tx_raw', { tx: tx });
-  });
 });
 
 module.exports = router;
