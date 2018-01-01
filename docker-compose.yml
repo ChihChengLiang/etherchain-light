@@ -8,6 +8,8 @@ services:
       - 3000:3000
     links:
       - provider
+    depends_on:
+      - provider
     command: ["npm", "start"]
   provider:
     image: ethresearch/pyethapp

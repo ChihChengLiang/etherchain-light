@@ -4,6 +4,6 @@ COPY . /root
 
 WORKDIR /root
 
-RUN npm i -q
+RUN npm install
 
 EXPOSE 3000
