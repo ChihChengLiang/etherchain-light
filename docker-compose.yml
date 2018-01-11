@@ -12,7 +12,7 @@ services:
       - provider
     command: ["npm", "start"]
   provider:
-    image: ethresearch/pyethapp
+    image: ethresearch/pyethapp-research
     volumes:
       - ./provider/default_data/config:/root/.config/pyethapp
       - ./provider/default_data/log:/root/log
